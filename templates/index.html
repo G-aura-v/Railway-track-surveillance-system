@@ -1,0 +1,323 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Track Surveillance System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Previous styles remain the same */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --text-light: #ecf0f1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f6fa;
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .video-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .video-feed {
+            width: 100%;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .controls-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-card {
+            background: var(--secondary-color);
+            color: var(--text-light);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .status-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .detected-objects {
+            margin-top: 1rem;
+        }
+
+        .object-tag {
+            display: inline-block;
+            background: var(--accent-color);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            margin: 0.2rem;
+            font-size: 0.9rem;
+        }
+
+        .motion-alert {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .flash {
+            animation: flash 1s linear infinite;
+        }
+
+        @keyframes flash {
+            0% { background-color: rgba(231, 76, 60, 0.2); }
+            50% { background-color: rgba(231, 76, 60, 0.5); }
+            100% { background-color: rgba(231, 76, 60, 0.2); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add audio element -->
+    <audio id="alarmSound">
+        <source src="{{ url_for('static', filename='buzz.mp3') }}" type="audio/mp3">
+    </audio>
+
+    <header class="header">
+        <h1>
+            <i class="fas fa-video"></i>
+            Railway Track Surveillance System
+        </h1>
+        <div id="current-time"></div>
+    </header>
+
+    <div class="container">
+        <div class="video-container">
+            <img src="{{ url_for('video_feed') }}" alt="Video Feed" class="video-feed">
+            <div class="motion-alert flash" id="motionAlert">
+                <i class="fas fa-exclamation-triangle"></i>
+                Motion Detected!
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="status-card">
+                <h3>
+                    <i class="fas fa-shield-alt"></i>
+                    System Status
+                </h3>
+                <div class="status-indicator">
+                    <span>Alarm Mode:</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="alarmToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="status-indicator">
+                    <i class="fas fa-walking"></i>
+                    <span id="motionStatus">No Motion</span>
+                </div>
+            </div>
+
+            <div class="status-card">
+                <h3>
+                    <i class="fas fa-search"></i>
+                    Detected Objects
+                </h3>
+                <div id="detectedObjects" class="detected-objects">
+                    No objects detected
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let alarmEnabled = false;
+        let lastAlarmTime = 0;
+        const ALARM_COOLDOWN = 3000; // 3 seconds cooldown
+        let previousMotionStatus = "No Motion";
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = 
+                now.toLocaleString();
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        const alarmToggle = document.getElementById('alarmToggle');
+        const motionStatus = document.getElementById('motionStatus');
+        const detectedObjects = document.getElementById('detectedObjects');
+        const motionAlert = document.getElementById('motionAlert');
+        const alarmSound = document.getElementById('alarmSound');
+
+        function playAlarm() {
+            const currentTime = Date.now();
+            if (currentTime - lastAlarmTime > ALARM_COOLDOWN) {
+                alarmSound.play().catch(e => console.log('Error playing alarm:', e));
+                lastAlarmTime = currentTime;
+            }
+        }
+
+        alarmToggle.addEventListener('change', async () => {
+            alarmEnabled = alarmToggle.checked;
+            try {
+                const response = await fetch(`/toggle_alarm/${alarmEnabled ? 1 : 0}`);
+                const data = await response.json();
+                console.log('Alarm mode:', data.alarm_mode);
+            } catch (error) {
+                console.error('Error toggling alarm:', error);
+            }
+        });
+
+        async function updateStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                
+                motionStatus.textContent = data.motion_status;
+                
+                if (data.motion_status === "Motion Detected!") {
+                    motionStatus.style.color = 'var(--danger-color)';
+                    motionAlert.style.display = 'block';
+                    if (alarmEnabled && previousMotionStatus !== "Motion Detected!") {
+                        playAlarm();
+                    }
+                } else {
+                    motionStatus.style.color = 'var(--text-light)';
+                    motionAlert.style.display = 'none';
+                }
+
+                previousMotionStatus = data.motion_status;
+
+                if (data.detected_objects.length > 0) {
+                    detectedObjects.innerHTML = data.detected_objects
+                        .map(obj => `<span class="object-tag">${obj}</span>`)
+                        .join('');
+                } else {
+                    detectedObjects.innerHTML = 'No objects detected';
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+
+        setInterval(updateStatus, 1000);
+        updateStatus();
+    </script>
+</body>
+</html>
