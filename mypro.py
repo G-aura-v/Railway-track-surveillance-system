@@ -1,3 +1,5 @@
+
+
 from flask import Flask, render_template, Response, jsonify
 import cv2
 import threading
@@ -6,6 +8,10 @@ import imutils
 import time
 import os
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 
 app = Flask(__name__)
 
@@ -17,8 +23,40 @@ detected_objects = []
 motion_status = "No Motion"
 alarm_mode = False
 last_alarm_time = 0
+last_email_time = 0
+
+# Constants
 ALARM_COOLDOWN = 3
 MOTION_SENSITIVITY = 5000
+GMAIL_COOLDOWN = 60  # Cooldown in seconds
+
+# Email credentials (replace these with your real credentials)
+EMAIL_SENDER = "iamgauravcbsa@gmail.com"
+EMAIL_PASSWORD = "qaqf nvyw uwbu cmqg"  # Use Gmail App Password
+EMAIL_RECEIVER = "ggaauurraavv27@gmail.com"
+
+def send_email_with_snapshot(image_path):
+    try:
+        msg = MIMEMultipart()
+        msg['Subject'] = '⚠️ Motion Detected on Track!'
+        msg['From'] = EMAIL_SENDER
+        msg['To'] = EMAIL_RECEIVER
+
+        text = MIMEText("Motion was detected on the railway track. See attached image.")
+        msg.attach(text)
+
+        with open(image_path, 'rb') as f:
+            img = MIMEImage(f.read())
+            img.add_header('Content-Disposition', 'attachment', filename=os.path.basename(image_path))
+            msg.attach(img)
+
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"📨 Email sent with snapshot: {image_path}")
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
 
 def init_camera():
     global camera
@@ -78,10 +116,9 @@ def detect_objects(frame):
     return frame, detected
 
 def process_frames():
-    global output_frame, lock, detected_objects, motion_status, alarm_mode
-    
+    global output_frame, lock, detected_objects, motion_status, alarm_mode, last_email_time
     previous_frame = None
-    
+
     while True:
         if camera is None or not camera.isOpened():
             continue
@@ -105,6 +142,15 @@ def process_frames():
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                 frame, objects = detect_objects(frame)
                 detected_objects = objects
+
+                current_time = time.time()
+                if current_time - last_email_time > GMAIL_COOLDOWN:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    os.makedirs("snapshots", exist_ok=True)
+                    image_path = f"snapshots/motion_{timestamp}.jpg"
+                    cv2.imwrite(image_path, frame)
+                    send_email_with_snapshot(image_path)
+                    last_email_time = current_time
             else:
                 motion_status = "No Motion"
                 cv2.putText(frame, motion_status, (10, 30), 
