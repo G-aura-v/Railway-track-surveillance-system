@@ -10,6 +10,7 @@ The **Railway Track Surveillance System** is designed to monitor railway tracks 
 - **Motion and Object Detection**: Detect anomalies using **YOLOv4** for fast and accurate detection.
 - **Live Feed Interface**: Displays live video with detected objects highlighted.
 - **Adjustable Alarm Mode**: Toggle motion detection on or off.
+- **Email Alerts via Gmail**: Sends an alert email with a captured image to a configured Gmail address when motion is detected.
 - **System Health Display**: Information about system status and detection activity.
 - **Simple Setup**: Easy configuration for quick deployment.
 
@@ -19,6 +20,7 @@ The **Railway Track Surveillance System** is designed to monitor railway tracks 
 - **Flask**: Web framework to serve live video feed.
 - **OpenCV**: For video processing and webcam access.
 - **YOLOv4**: Real-time object detection for anomaly identification.
+- **smtplib (Gmail)**: For sending alert emails with motion detection images.
 
 ## Installation
 
@@ -67,6 +69,7 @@ Download the following files and place them in the root directory:
 - Adjustable Motion Detection: You can enable or disable motion detection as needed via the web interface.
 - Sensitivity Settings: Modify the detection sensitivity by adjusting the settings in the mypro.py file to suit the environment.
 - System Health: The web interface will display the current system status, including whether motion detection and object detection are active.
+- Email Alerts: When motion is detected, the system will capture the frame and send an email alert with the snapshot attached.
 
 ## License
 
